@@ -1,9 +1,9 @@
 import cv2
 import mediapipe as mp
-import data_sender as ds
+import data_sender
 
 BRIGHTNESS = 4
-CONSTRAST = 1
+CONTRAST = 1
 
 # Initialize MediaPipe Hands.
 mp_hands = mp.solutions.hands
@@ -25,7 +25,7 @@ def count_fingers(landmarks, hand_label="Right"):
     fingers = []
     # Thumb: for right hand, tip (4) should be to the right of landmark 3; for left hand, the opposite.
     if hand_label == "Right":
-        if landmarks[4][1] < landmarks[3][1]:
+        if landmarks[4][1] > landmarks[3][1]:
             fingers.append(1)
         else:
             fingers.append(0)
@@ -51,8 +51,32 @@ def get_hand_label(results):
         return results.multi_handedness[0].classification[0].label
     return "Right"  # default
 
+# gestures for right hand. Reverse sort for left-hand
+gestures = {
+    "open" : [1,1,1,1,1],
+    "fist" : [0,0,0,0,0],
+    "index only up" : [0,1,0,0,0],
+    "thumb out" : [1,0,0,0,0],
+    "index thumb out" : [1,1,0,0,0],
+    "yo" : [0,1,0,0,1],
+    "ilu" : [1,1,0,0,1]
+}
+
+def get_gesture(sign):
+    for ges in gestures:
+        if gestures[ges] == sign:
+            return ges
+    for ges in gestures:
+        leftie = sorted(gestures[ges], reverse=True)
+        if leftie == sign:
+            return "left" + ges
+    return None
+
 # Open the webcam.
 cap = cv2.VideoCapture(0)
+
+# memory for hand gesture to prevent overload??
+gesture_memory = None
 
 while cap.isOpened():
     ret, frame = cap.read()
@@ -88,12 +112,25 @@ while cap.isOpened():
             fingers = count_fingers(landmarks_list, hand_label)
             # Example: if only the index finger is up, fingers might be [0, 1, 0, 0, 0]
             cv2.putText(frame, f"Fingers: {fingers}", (10, 50), cv2.FONT_HERSHEY_SIMPLEX,
-                        1, (180, 255, 255), 2)
+                        1, (145, 14, 0), 2)
+            
+            """
             # Check for specific gesture: only index finger up.
             if fingers == [0, 1, 0, 0, 0]:
                 cv2.putText(frame, "One Finger Up Detected!", (10, 90), cv2.FONT_HERSHEY_SIMPLEX,
                             1, (255, 255, 255), 2)
                 # typer.type("One Finger Up")
+            """
+            gesture_result = get_gesture(fingers)
+            if gesture_memory != gesture_result:
+                if gesture_result == "index only up":
+                    data_sender.send_data("on")
+                elif gesture_result == "fist":
+                    data_sender.send_data("off")
+
+            received_data = data_sender.read_data()
+            if received_data:
+                print(f"Received: {received_data}\n")
     
     cv2.imshow("Hand Gesture Recognition", frame)
     if cv2.waitKey(1) & 0xFF == ord('q'):
