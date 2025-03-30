@@ -1,7 +1,9 @@
 import cv2
 import mediapipe as mp
-import typer
+import data_sender as ds
 
+BRIGHTNESS = 4
+CONSTRAST = 1
 
 # Initialize MediaPipe Hands.
 mp_hands = mp.solutions.hands
@@ -23,7 +25,7 @@ def count_fingers(landmarks, hand_label="Right"):
     fingers = []
     # Thumb: for right hand, tip (4) should be to the right of landmark 3; for left hand, the opposite.
     if hand_label == "Right":
-        if landmarks[4][1] > landmarks[3][1]:
+        if landmarks[4][1] < landmarks[3][1]:
             fingers.append(1)
         else:
             fingers.append(0)
@@ -59,6 +61,9 @@ while cap.isOpened():
 
     # Convert BGR to RGB for MediaPipe.
     frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    
+    # Add brightness and constrast to image
+    frame_rgb = cv2.convertScaleAbs(frame_rgb, CONTRAST, BRIGHTNESS)
     
     # Process the frame and detect hand landmarks.
     results = hands.process(frame_rgb)
