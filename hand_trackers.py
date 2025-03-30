@@ -1,6 +1,9 @@
 import cv2
 import mediapipe as mp
 
+brightness = 4
+contrast = 1
+
 # Initialize MediaPipe Hands.
 mp_hands = mp.solutions.hands
 hands = mp_hands.Hands(
@@ -21,7 +24,7 @@ while cap.isOpened():
 
     # Convert the BGR frame to RGB, as MediaPipe requires RGB images.
     frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-    
+    frame_rgb = cv2.convertScaleAbs(frame_rgb, contrast, brightness)
     # Process the frame to detect hand landmarks.
     results = hands.process(frame_rgb)
     
