@@ -1,16 +1,21 @@
 import cv2
 import mediapipe as mp
-import data_sender
+# import serial_talker
+import wifi_talker
 
 BRIGHTNESS = 4
 CONTRAST = 1
+
+# Establish connection with the ESP32
+
+wifi_talker.connect_socket()
 
 # Initialize MediaPipe Hands.
 mp_hands = mp.solutions.hands
 hands = mp_hands.Hands(
     static_image_mode=False,
     max_num_hands=2,  # Change to 2 if you want to process both hands.
-    min_detection_confidence=0.7,
+    min_detection_confidence=0.9,
     min_tracking_confidence=0.5
 )
 mp_draw = mp.solutions.drawing_utils
@@ -75,7 +80,7 @@ def get_gesture(sign):
 # Open the webcam.
 cap = cv2.VideoCapture(0)
 
-# memory for hand gesture to prevent overload??
+# memory for hand gesture to not repeat signal unnecessarily
 gesture_memory = None
 
 while cap.isOpened():
@@ -112,7 +117,7 @@ while cap.isOpened():
             fingers = count_fingers(landmarks_list, hand_label)
             # Example: if only the index finger is up, fingers might be [0, 1, 0, 0, 0]
             cv2.putText(frame, f"Fingers: {fingers}", (10, 50), cv2.FONT_HERSHEY_SIMPLEX,
-                        1, (145, 14, 0), 2)
+                        1, (0, 255, 60), 2)
             
             """
             # Check for specific gesture: only index finger up.
@@ -122,19 +127,29 @@ while cap.isOpened():
                 # typer.type("One Finger Up")
             """
             gesture_result = get_gesture(fingers)
-            if gesture_memory != gesture_result:
-                if gesture_result == "index only up":
-                    data_sender.send_data("on")
-                elif gesture_result == "fist":
-                    data_sender.send_data("off")
+            if gesture_result!=gesture_memory:
+                if gesture_memory != gesture_result:
+                    if gesture_result == "index only up":
+                        # serial_talker.send_data("on")
+                        wifi_talker.send_data("on")
+                    elif gesture_result == "fist":
+                        # serial_talker.send_data("off")
+                        wifi_talker.send_data("off")
+                gesture_memory=gesture_result
 
-            received_data = data_sender.read_data()
-            if received_data:
-                print(f"Received: {received_data}\n")
+            # serial_response = serial_talker.read_data()
+            # if serial_response:
+            #     print(f"Received (Serial) : {serial_response}\n")
+                
+            # wifi_response = wifi_talker.read_data()
+            # if wifi_response:
+            #     print(f"Received (WiFi) : {wifi_response}\n")
     
     cv2.imshow("Hand Gesture Recognition", frame)
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 
+# serial_talker.close_serial()
+wifi_talker.close_socket()
 cap.release()
 cv2.destroyAllWindows()
