@@ -27,6 +27,7 @@ def send_data(data):
 
 def close_socket():
     print("WiFi Socket closed.\n")
+    s.shutdown(socket.SHUT_RDWR)
     s.close()
     
 def read_data():
