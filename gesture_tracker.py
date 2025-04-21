@@ -57,15 +57,26 @@ def get_hand_label(results):
     return "Right"  # default
 
 # gestures for right hand. Reverse sort for left-hand
+# for thumb, 1 means closed, 0 means open
 gestures = {
-    "open" : [1,1,1,1,1],
-    "fist" : [0,0,0,0,0],
-    "index only up" : [0,1,0,0,0],
-    "thumb out" : [1,0,0,0,0],
-    "index thumb out" : [1,1,0,0,0],
+    "open" : [0,1,1,1,1],
+    "fist" : [1,0,0,0,0],
+    "index-thumb up" : [0,1,0,0,0],
+    "index down thumb" : [0,0,0,0,0],
     "yo" : [0,1,0,0,1],
-    "ilu" : [1,1,0,0,1]
+    "ilu" : [1,1,0,0,1],
+    "3_out" : [1,1,1,1,0],
+    "1_out" : [1,1,0,0,0],
+    "pinky_out" : [1,0,0,0,1]
 }
+
+"""
+open -> door open
+fist -> door close
+3_out -> fan on
+2_out -> fan off
+
+"""
 
 def get_gesture(sign):
     for ges in gestures:
@@ -93,7 +104,7 @@ while cap.isOpened():
     
     # Add brightness and constrast to image
     frame_rgb = cv2.convertScaleAbs(frame_rgb, CONTRAST, BRIGHTNESS)
-    
+    frame = cv2.convertScaleAbs(frame, CONTRAST, BRIGHTNESS)
     # Process the frame and detect hand landmarks.
     results = hands.process(frame_rgb)
     
@@ -129,12 +140,22 @@ while cap.isOpened():
             gesture_result = get_gesture(fingers)
             if gesture_result!=gesture_memory:
                 if gesture_memory != gesture_result:
-                    if gesture_result == "index only up":
+                    if gesture_result == "index-thumb up":
                         # serial_talker.send_data("on")
-                        wifi_talker.send_data("on")
-                    elif gesture_result == "fist":
+                        wifi_talker.send_data("led_on")
+                        # wifi_talker.send_data("angle: 90")
+                    elif gesture_result == "index down thumb":
                         # serial_talker.send_data("off")
-                        wifi_talker.send_data("off")
+                        wifi_talker.send_data("led_off")
+                        # wifi_talker.send_data("angle: 0")
+                    elif gesture_result == "open":
+                        wifi_talker.send_data("angle: 90")
+                    elif gesture_result == "fist":
+                        wifi_talker.send_data("angle: 0")
+                    elif gesture_result == "3_out":
+                        wifi_talker.send_data("motor_on")
+                    elif gesture_result == "1_out":
+                        wifi_talker.send_data("motor_off")
                 gesture_memory=gesture_result
 
             # serial_response = serial_talker.read_data()

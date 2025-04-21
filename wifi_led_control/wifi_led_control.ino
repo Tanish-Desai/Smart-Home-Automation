@@ -1,9 +1,16 @@
 // #include <wifi_server.h>
 #include <controller.h>
 #include <WiFi.h>
+#include<ESP32Servo.h>
 
-const char *ssid = "Da PC Oh Yeah!";
-const char *password = "babubro345";
+int servoPin = 18;
+int motorPin = 19;
+// const int led = 17;
+
+Servo myservo;
+
+const char *ssid = "pranay";
+const char *password = "12345678";
 
 /*
 Da PC Oh Yeah!
@@ -33,6 +40,7 @@ void setup(){
     Serial.begin(115200);
     pinMode(led, OUTPUT);
     pinMode(LED_BUILTIN, OUTPUT);
+    myservo.attach(servoPin);
 
     WiFi.mode(WIFI_STA);
 
@@ -50,9 +58,9 @@ void setup(){
 
     while (WiFi.status() != WL_CONNECTED) {
         digitalWrite(LED_BUILTIN, HIGH);
-        delay(250);
+        delay(120);
         digitalWrite(LED_BUILTIN, LOW);
-        delay(250);
+        delay(120);
         Serial.print(".");
     }
     
@@ -76,9 +84,9 @@ void loop(){
         Serial.println("WiFi Disconnected");
         while(WiFi.status() != WL_CONNECTED){
             digitalWrite(LED_BUILTIN, HIGH);
-            delay(250);
+            delay(150);
             digitalWrite(LED_BUILTIN, LOW);
-            delay(250);
+            delay(150);
             Serial.print(".");
         }
         Serial.println("");
@@ -109,6 +117,18 @@ void loop(){
                 client.println(data);
 
                 update_led(data, led);
+                update_motor(data, motorPin);
+
+                // for servo control
+                if(data == "angle: 90"){
+                    myservo.write(90);
+                    delay(300);
+                }
+                else if(data == "angle: 0"){
+                    myservo.write(0);
+                    delay(300);
+                }
+
                 digitalWrite(LED_BUILTIN, LOW);
             }
         }
@@ -122,7 +142,7 @@ void loop(){
 
     // Blinker to indicate no connected client
     digitalWrite(LED_BUILTIN, HIGH);
-    delay(100);
+    delay(240);
     digitalWrite(LED_BUILTIN, LOW);
-    delay(100);
+    delay(240);
 }
